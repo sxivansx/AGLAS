@@ -133,7 +133,7 @@ grid on; xlabel('number of elements'); ylabel('root moment error [%]');
 title('Recovered root bending moment convergence');
 legend('measured', 'second order reference', 'Location', 'southwest');
 
-print(fig, fullfile(paths.results, 'mesh_convergence.png'), '-dpng', '-r150');
+save_figure(fig, fullfile(paths.results, 'mesh_convergence.png'), 150);
 
 out_file = fullfile(paths.data, 'mesh_convergence.mat');
 save(out_file, 'cfg', 'n_el_list', 'err_f', 'err_w', 'err_M', 'f_bend', ...

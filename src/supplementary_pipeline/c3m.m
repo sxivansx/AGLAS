@@ -96,7 +96,7 @@ xlabel('time [s]'); ylabel('tip deflection [m]'); xlim([t3(1) t3(end)]);
 title(sprintf('Tip response to turbulence (RMS %.3f m, peak %.3f m)', ...
               std(tipC), max(abs(tipC))));
 
-print(fig, fullfile(paths.results, 'response_comparison.png'), '-dpng', '-r150');
+save_figure(fig, fullfile(paths.results, 'response_comparison.png'), 150);
 
 out_file = fullfile(paths.data, 'turbulence_response.mat');
 save(out_file, 'cfg', 'tA', 'tipA', 'tB', 'tipB', 'tC', 'tipC', ...

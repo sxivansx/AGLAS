@@ -167,7 +167,7 @@ legend('baseline', 'sized', sprintf('target %.1f', target), ...
        sprintf('critical %.1f', critical), 'Location', 'northwest');
 ylim([0, cfg.safety.fos_plot_cap]);
 
-print(fig, fullfile(paths.results, 'fos_optimisation.png'), '-dpng', '-r150');
+save_figure(fig, fullfile(paths.results, 'fos_optimisation.png'), 150);
 
 out_file = fullfile(paths.data, 'fos_optimisation.mat');
 save(out_file, 'cfg', 'cfg_opt', 'zones', 'safe_mask', 'scan', 'fs', 'fos', ...

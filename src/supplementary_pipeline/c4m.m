@@ -94,7 +94,7 @@ surf(t_sol, x, stress/1e6, 'EdgeColor', 'none');
 xlabel('time [s]'); ylabel('span [m]'); zlabel('stress [MPa]');
 title('Stress over span and time'); view(40, 32); colorbar;
 
-print(fig, fullfile(paths.results, 'stress_field.png'), '-dpng', '-r150');
+save_figure(fig, fullfile(paths.results, 'stress_field.png'), 150);
 
 out_file = fullfile(paths.data, 'stress_field.mat');
 save(out_file, 'cfg', 'x', 't_sol', 'moment', 'stress', 'peak_s', 'peak_M', ...

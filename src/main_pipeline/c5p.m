@@ -55,6 +55,11 @@ for idx = frames
     xlabel('time [s]'); ylabel('gust velocity [m/s]');
     title('Gust input');
 
+    % Reapply after every clf: the cleared figure creates fresh axes, which
+    % pick up the MATLAB desktop theme again. Without this the GIF comes out
+    % black-backgrounded for anyone running in dark mode.
+    force_light_figure(fig);
+
     drawnow;
 
     if SAVE_GIF

@@ -105,7 +105,7 @@ end
 legend(lg, 'Location', 'northeast');
 title('Generalised coordinates');
 
-print(fig, fullfile(paths.results, 'gust_response.png'), '-dpng', '-r150');
+save_figure(fig, fullfile(paths.results, 'gust_response.png'), 150);
 
 out_file = fullfile(paths.data, 'modal_response.mat');
 save(out_file, 'cfg', 't_sol', 'q_sol', 'U_dof', 'w_field', 'tip_w', ...

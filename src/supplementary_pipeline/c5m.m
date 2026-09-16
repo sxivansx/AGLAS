@@ -104,7 +104,7 @@ legend('minimum FoS', sprintf('target %.1f', cfg.safety.fos_target), ...
        sprintf('critical %.1f', cfg.safety.fos_critical), 'Location', 'northwest');
 ylim([0, cfg.safety.fos_plot_cap]);
 
-print(fig, fullfile(paths.results, 'strain_safety.png'), '-dpng', '-r150');
+save_figure(fig, fullfile(paths.results, 'strain_safety.png'), 150);
 
 out_file = fullfile(paths.data, 'strain_analysis.mat');
 save(out_file, 'cfg', 'x', 't_sol', 'strain', 'stress', 'FoS_field', ...

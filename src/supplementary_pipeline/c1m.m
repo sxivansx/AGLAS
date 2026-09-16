@@ -79,7 +79,7 @@ grid on; xlabel('\omega [rad/s]'); ylabel('S_w(\omega) [(m/s)^2/(rad/s)]');
 title('von Karman vertical velocity spectrum');
 legend('target PSD', '\omega^{-5/3} reference', 'Location', 'southwest');
 
-print(fig, fullfile(paths.results, 'gust_models.png'), '-dpng', '-r150');
+save_figure(fig, fullfile(paths.results, 'gust_models.png'), 150);
 
 out_file = fullfile(paths.data, 'gust_models.mat');
 save(out_file, 'cfg', 't', 'wg_disc', 't_turb', 'wg_turb', 'vk');

@@ -130,7 +130,7 @@ if ~isempty(gvis)
     ylim([max(min(gvis), -1.0), min(max(max(gvis), 0.05), 0.5)]);
 end
 
-print(fig, fullfile(paths.results, 'flutter_vgf.png'), '-dpng', '-r150');
+save_figure(fig, fullfile(paths.results, 'flutter_vgf.png'), 150);
 
 U               = res.U;
 damping         = res.damping;

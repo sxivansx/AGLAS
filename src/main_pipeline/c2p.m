@@ -81,7 +81,7 @@ for i = 1:n_plot
     title(sprintf('Mode %d  -  %.3f Hz  (%s)', i, modes.freq_hz(i), modes.type{i}));
     if i == n_plot, xlabel('spanwise station [m]'); end
 end
-print(fig, fullfile(paths.results, 'mode_shapes.png'), '-dpng', '-r150');
+save_figure(fig, fullfile(paths.results, 'mode_shapes.png'), 150);
 
 out_file = fullfile(paths.data, 'structural_model.mat');
 save(out_file, 'cfg', 'fem', 'modes');
