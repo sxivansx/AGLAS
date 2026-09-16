@@ -100,6 +100,13 @@ function S = aglas_sim_setup(preset, r_command, gamma, lambda)
 
     S.cfg = cfg; S.P = P; S.base = base; S.mrac = mrac;
 
+    % Save the design so it can be inspected or reloaded without rebuilding,
+    % in the same data/ folder the rest of the pipeline writes to.
+    paths = aglas_paths();
+    design_file = fullfile(paths.data, 'control_design.mat');
+    cfg_saved = cfg; P_saved = P; base_saved = base; mrac_saved = mrac; %#ok<NASGU>
+    save(design_file, 'S', 'cfg_saved', 'P_saved', 'base_saved', 'mrac_saved');
+
     % Simulink evaluates block parameters in the base workspace.
     assignin('base', 'AGLAS', S);
     fprintf('AGLAS Simulink parameters ready in the base workspace.\n');
@@ -108,4 +115,5 @@ function S = aglas_sim_setup(preset, r_command, gamma, lambda)
     fprintf('  actuator limits %.1f deg, %.0f deg/s\n', ...
             cfg.control.delta_max, cfg.control.rate_max);
     fprintf('  simulate to t = %.1f s with a fixed step of %.0e s\n', S.t_final, dt);
+    fprintf('  design saved to %s\n', design_file);
 end

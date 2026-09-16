@@ -31,7 +31,8 @@ function compare_simulink(mdl)
 
     if nargin < 1 || isempty(mdl), mdl = 'aglas_gla'; end
 
-    S = evalin('base', 'AGLAS');
+    S     = evalin('base', 'AGLAS');
+    paths = aglas_paths();
 
     fprintf('Running Simulink model %s ...\n', mdl);
     simOut = sim(mdl);
@@ -102,16 +103,69 @@ function compare_simulink(mdl)
         fprintf('  6. Saturation placed BEFORE Rate Limiter, not after\n');
     end
 
-    figure('Name', 'Simulink against reference', 'Color', 'w');
+    % ---------------------------------------------------------------- figure
+    fig = figure('Name', 'Simulink against reference', 'Color', 'w', ...
+                 'Position', [100 100 900 620]);
     subplot(2,1,1);
-    plot(t_sl, mom_sl/1e3, 'LineWidth', 1.6); hold on;
-    plot(t_sl, mom_ref/1e3, '--', 'LineWidth', 1.4); grid on;
-    ylabel('root moment [kN m]'); legend('Simulink', 'reference'); 
-    title('Model verification');
+    plot(t_sl, mom_sl/1e3, 'LineWidth', 1.8); hold on;
+    plot(t_sl, mom_ref/1e3, '--', 'LineWidth', 1.5); grid on;
+    ylabel('root moment [kN m]');
+    legend('Simulink', '.m reference', 'Location', 'northeast');
+    title(sprintf('Model verification: %s, adaptation %s, lambda = %.2f', ...
+          mdl, ternary(S.adapt_on ~= 0, 'on', 'off'), S.lambda), ...
+          'Interpreter', 'none');
+
     subplot(2,1,2);
-    plot(t_sl, rad2deg(del_sl), 'LineWidth', 1.6); hold on;
-    plot(t_sl, rad2deg(del_ref), '--', 'LineWidth', 1.4); grid on;
-    xlabel('time [s]'); ylabel('command [deg]'); legend('Simulink', 'reference');
+    plot(t_sl, rad2deg(del_sl), 'LineWidth', 1.8); hold on;
+    plot(t_sl, rad2deg(del_ref), '--', 'LineWidth', 1.5);
+    plot(t_sl([1 end]),  S.cfg.control.delta_max*[1 1], 'k:', 'LineWidth', 1.2);
+    plot(t_sl([1 end]), -S.cfg.control.delta_max*[1 1], 'k:', 'LineWidth', 1.2);
+    grid on; xlabel('time [s]'); ylabel('command [deg]');
+    legend('Simulink', '.m reference', 'deflection limit', 'Location', 'southeast');
+
+    fig_file = fullfile(paths.results, 'simulink_verification.png');
+    print(fig, fig_file, '-dpng', '-r150');
+
+    % ------------------------------------------------------------------ data
+    sl.t          = t_sl;
+    sl.moment     = mom_sl;
+    sl.delta_cmd  = del_sl;
+    sl.tip        = try_logged(simOut, 'aglas_tip');
+    sl.theta      = try_logged(simOut, 'aglas_theta');
+    sl.u_adaptive = try_logged(simOut, 'aglas_u_ad');
+    sl.gust       = try_logged(simOut, 'aglas_gust');
+
+    comparison.peak_moment_pct  = 100*pk_mom;
+    comparison.peak_command_pct = 100*pk_del;
+    comparison.rms_pct          = 100*rms_mom;
+    comparison.max_pointwise_pct= 100*mx_mom;
+    comparison.agrees           = ok;
+
+    settings.adapt_on = S.adapt_on;
+    settings.lambda   = S.lambda;
+    settings.r_command= S.cfg.lqr.r_command;
+    settings.dt       = S.dt;
+
+    data_file = fullfile(paths.data, 'simulink_run.mat');
+    reference = ref; %#ok<NASGU>
+    save(data_file, 'sl', 'reference', 'comparison', 'settings');
+
+    fprintf('\nSaved %s\n', fig_file);
+    fprintf('Saved %s\n', data_file);
+end
+
+% ------------------------------------------------------------------------
+function out = ternary(c, a, b)
+    if c, out = a; else, out = b; end
+end
+
+% ------------------------------------------------------------------------
+function v = try_logged(simOut, name)
+%TRY_LOGGED  Fetch an optional signal, returning empty rather than erroring.
+    v = [];
+    try %#ok<TRYNC>
+        v = get_logged(simOut, name);
+    end
 end
 
 % ------------------------------------------------------------------------

@@ -29,6 +29,21 @@ the actual problem. Retrieval now reads the `SimulationOutput` object first and
 falls back to the base workspace, and reports the missing signal by name if
 neither has it.
 
+## What gets written
+
+Both are written into the same project folders the rest of the pipeline uses,
+so the Simulink results sit alongside the open-loop analysis rather than only
+existing in the MATLAB workspace.
+
+| File | Written by | Contents |
+|---|---|---|
+| `data/control_design.mat` | `aglas_sim_setup` | the full design: plant, estimator, reference model, gains, weights |
+| `data/simulink_run.mat` | `compare_simulink` | logged Simulink signals, the `.m` reference run, the comparison metrics and the settings used |
+| `results/simulink_verification.png` | `compare_simulink` | the overlay of model against reference |
+
+Note `data/*.mat` is listed in the repository `.gitignore`, so these are local
+artefacts unless force-added.
+
 ## What the model contains
 
 | Block | Contents |
