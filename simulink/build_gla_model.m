@@ -44,7 +44,7 @@ function mdl = build_gla_model(mdl)
 %                    |        |                     |
 %                    |        +---(+)---------------+
 %                    |             |
-%                    +--[SAT]--[RATE LIMIT]--+
+%                    +--[SAT]--[RATE LIMIT]--+   (position limit, then slew)
 %
 %   Solver: fixed step ode4. The rate limiter is a stateful nonlinearity whose
 %   output depends on the previously accepted step, so a variable-step solver
@@ -148,14 +148,19 @@ function mdl = build_gla_model(mdl)
     add('simulink/Math Operations/Sum', 'SumU', [1180 380 1200 400]);
     set_param([mdl '/SumU'], 'Inputs', '++', 'IconShape', 'round');
 
-    add('simulink/Discontinuities/Rate Limiter', 'RateLim', [1240 370 1290 410]);
+    % Position limit first, then slew limit. A Rate Limiter placed before the
+    % Saturation holds its own pre-saturation output as state, so while the
+    % surface sits on a stop it keeps winding past it and must unwind before
+    % the surface moves back. Clipping first removes that windup and makes the
+    % model agree with the .m reference block for block.
+    add('simulink/Discontinuities/Saturation', 'Sat', [1240 370 1290 410]);
+    set_param([mdl '/Sat'], ...
+        'UpperLimit', 'AGLAS.delta_max', 'LowerLimit', '-AGLAS.delta_max');
+
+    add('simulink/Discontinuities/Rate Limiter', 'RateLim', [1330 370 1380 410]);
     set_param([mdl '/RateLim'], ...
         'RisingSlewLimit', 'AGLAS.rate_max', ...
         'FallingSlewLimit', '-AGLAS.rate_max');
-
-    add('simulink/Discontinuities/Saturation', 'Sat', [1330 370 1380 410]);
-    set_param([mdl '/Sat'], ...
-        'UpperLimit', 'AGLAS.delta_max', 'LowerLimit', '-AGLAS.delta_max');
 
     % ------------------------------------------------------------ logging
     % Every logged name is prefixed. An unprefixed 'moment' shadows nothing on
@@ -186,14 +191,14 @@ function mdl = build_gla_model(mdl)
                                         sprintf('%s/%d', b, bp), ...
                                         'autorouting', 'on');
 
-    cn('Sat', 1, 'PlantIn', 1);
+    cn('RateLim', 1, 'PlantIn', 1);
     cn('Gust', 1, 'PlantIn', 2);
     cn('Gust', 1, 'LogGust', 1);
     cn('PlantIn', 1, 'Plant', 1);
     cn('Plant', 1, 'PlantOut', 1);
 
     cn('PlantOut', 1, 'EstIn', 2);        % measurements y
-    cn('Sat', 1, 'EstIn', 1);             % control into the estimator
+    cn('RateLim', 1, 'EstIn', 1);         % control into the estimator
     cn('EstIn', 1, 'Estimator', 1);
 
     cn('PlantOut', 2, 'PerfOut', 1);      % performance outputs z
@@ -222,9 +227,9 @@ function mdl = build_gla_model(mdl)
 
     cn('Kgain', 1, 'SumU', 1);
     cn('AdaptOn', 1, 'SumU', 2);
-    cn('SumU', 1, 'RateLim', 1);
-    cn('RateLim', 1, 'Sat', 1);
-    cn('Sat', 1, 'LogDelta', 1);
+    cn('SumU', 1, 'Sat', 1);
+    cn('Sat', 1, 'RateLim', 1);
+    cn('RateLim', 1, 'LogDelta', 1);
 
     % ------------------------------------------------------------ solver
     set_param(mdl, 'Solver', 'ode4', ...

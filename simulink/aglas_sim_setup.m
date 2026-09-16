@@ -6,7 +6,10 @@ function S = aglas_sim_setup(preset, r_command, gamma, lambda)
 %
 %   preset      configuration preset, default 'baseline'
 %   r_command   LQR control weight, default 0.3
-%   gamma       MRAC adaptation rate, default 5
+%   gamma       MRAC adaptation rate, default 0.5. At the design point there
+%               is no model error to adapt to, so any adaptation can only add
+%               control activity; 5 costs about 28 % of the achievable load
+%               reduction, 0.5 costs about 4 %.
 %   lambda      true control effectiveness multiplier applied to the PLANT
 %               only, default 1. Use a value below 1 to simulate a degraded
 %               surface the controller does not know about.
@@ -24,7 +27,7 @@ function S = aglas_sim_setup(preset, r_command, gamma, lambda)
 
     if nargin < 1 || isempty(preset),    preset = 'baseline'; end
     if nargin < 2 || isempty(r_command), r_command = 0.3;     end
-    if nargin < 3 || isempty(gamma),     gamma = 5;           end
+    if nargin < 3 || isempty(gamma),     gamma = 0.5;         end
     if nargin < 4 || isempty(lambda),    lambda = 1;          end
 
     here = fileparts(mfilename('fullpath'));

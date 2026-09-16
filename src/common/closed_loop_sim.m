@@ -136,15 +136,26 @@ function out = closed_loop_sim(cfg, P, ctrl, t, wg)
         end
 
         % ---- actuator command limits ---------------------------------------
+        % Position limit first, then slew limit measured from the position the
+        % surface actually reached. That ordering is what a real actuator does:
+        % it cannot be commanded past its stops, and from wherever it currently
+        % sits it cannot move faster than its hydraulic rate.
+        %
+        % The reverse order, slew then clip, is subtly different and the two
+        % disagree exactly while the surface is on a stop. A rate limiter
+        % holding its own pre-saturation output as state keeps winding past the
+        % stop and then has to unwind before the surface moves back, which is
+        % actuator windup. Doing it in this order removes the windup and, just
+        % as usefully, matches the Simulink model block for block.
         if use_limits
+            if abs(uc) > d_max
+                uc = sign(uc)*d_max;
+                n_sat_pos = n_sat_pos + 1;
+            end
             du = uc - u_prev;
             if abs(du) > r_max*dt
                 uc = u_prev + sign(du)*r_max*dt;
                 n_sat_rate = n_sat_rate + 1;
-            end
-            if abs(uc) > d_max
-                uc = sign(uc)*d_max;
-                n_sat_pos = n_sat_pos + 1;
             end
         end
         u(k) = uc;
@@ -172,10 +183,17 @@ function out = closed_loop_sim(cfg, P, ctrl, t, wg)
             w_hat = xhk(ctrl.idx_gust);
             e     = xhk(1:ns) - xm(:,k);
 
-            dxm = ctrl.Am*xm(:,k) + P.Bw*w_hat;
-            xm(:,k+1) = xm(:,k) + dt*dxm;
+            % RK4 on the reference model, to match the ode4 solver the
+            % Simulink model uses. Forward Euler here was a visible source of
+            % disagreement between the two.
+            fm = @(xx) ctrl.Am*xx + P.Bw*w_hat;
+            r1 = fm(xm(:,k));
+            r2 = fm(xm(:,k) + dt/2*r1);
+            r3 = fm(xm(:,k) + dt/2*r2);
+            r4 = fm(xm(:,k) + dt*r3);
+            xm(:,k+1) = xm(:,k) + dt/6*(r1 + 2*r2 + 2*r3 + r4);
 
-            % theta_hat_dot = -Gamma*( Phi*(B'*P_lyap*e) + sigma*theta )
+            % theta_hat_dot = -Gamma*( Phi*(B'*P_lyap*e)/(1+Phi'*Phi) + sigma*theta )
             phi_a = xhk(1:ns);
             s_e   = ctrl.PB.' * e;                    % scalar
             if ctrl.normalise

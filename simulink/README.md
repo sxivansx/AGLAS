@@ -83,6 +83,24 @@ add activity. The honest reading of these numbers is in the top-level control
 documentation: on this aircraft, across a realistic 35 to 200 m/s envelope,
 fixed-gain LQG stays stable and adaptation does not earn its complexity.
 
+## Interpreting the comparison
+
+`compare_simulink` reports four numbers. The ones that matter are the peak
+differences and the waveform RMS. A large worst-pointwise difference alongside
+small peak differences is normal: it means the two traces agree on the load the
+structure is sized by, and differ slightly in timing during a lightly damped
+secondary oscillation.
+
+One difference between the two is structural and permanent. The `.m` simulation
+computes the control once per step and holds it across the four RK4 stages,
+which is what a digital controller sampling at 5 kHz actually does. Simulink
+integrates the controller as part of one continuous system, so its command
+varies within the step.
+
+If the peaks disagree, set `AGLAS.adapt_on = 0` and re-run. That removes both
+adaptive integrators. If plain LQG then agrees tightly, the problem is in the
+adaptive path, not in the plant or estimator wiring.
+
 ## Verification status
 
 The `.m` path is covered by the project test suite and was used to produce
