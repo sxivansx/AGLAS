@@ -20,9 +20,10 @@ function compare_simulink(mdl)
     S = evalin('base', 'AGLAS');
 
     fprintf('Running Simulink model %s ...\n', mdl);
-    sim(mdl);
-    m_sl = evalin('base', 'moment');
-    d_sl = evalin('base', 'delta_cmd');
+    simOut = sim(mdl);
+
+    m_sl = get_logged(simOut, 'aglas_moment');
+    d_sl = get_logged(simOut, 'aglas_delta_cmd');
 
     t_sl   = m_sl.time(:).';
     mom_sl = squeeze(m_sl.signals.values).';
@@ -70,4 +71,42 @@ function compare_simulink(mdl)
     plot(t_sl, rad2deg(del_sl), 'LineWidth', 1.6); hold on;
     plot(t_sl, rad2deg(del_ref), '--', 'LineWidth', 1.4); grid on;
     xlabel('time [s]'); ylabel('command [deg]'); legend('Simulink', 'reference');
+end
+
+% ------------------------------------------------------------------------
+function sig = get_logged(simOut, name)
+%GET_LOGGED  Retrieve a To Workspace signal, whichever way this release returns it.
+%
+%   Recent MATLAB returns a Simulink.SimulationOutput object; older
+%   configurations drop the variables straight into the base workspace. Try the
+%   object first, fall back to the base workspace, and fail with a message that
+%   names the missing signal rather than letting the lookup resolve to some
+%   unrelated built-in function of the same name.
+
+    sig = [];
+
+    try %#ok<TRYNC>
+        if isa(simOut, 'Simulink.SimulationOutput')
+            avail = simOut.who;
+            if any(strcmp(avail, name))
+                sig = simOut.get(name);
+            end
+        end
+    end
+
+    if isempty(sig)
+        try %#ok<TRYNC>
+            if evalin('base', sprintf('exist(''%s'', ''var'')', name)) == 1
+                sig = evalin('base', name);
+            end
+        end
+    end
+
+    if isempty(sig) || ~isstruct(sig) || ~isfield(sig, 'time')
+        error('compare_simulink:missingLog', ...
+            ['The model did not log "%s". Check that the To Workspace block ' ...
+             'exists, that its Variable name is "%s", and that its Save ' ...
+             'format is "Structure With Time". Regenerating with ' ...
+             'build_gla_model will restore all six log blocks.'], name, name);
+    end
 end

@@ -158,12 +158,18 @@ function mdl = build_gla_model(mdl)
         'UpperLimit', 'AGLAS.delta_max', 'LowerLimit', '-AGLAS.delta_max');
 
     % ------------------------------------------------------------ logging
-    logs = { 'LogMoment', [430 200 490 230], 'moment'
-             'LogTip',    [430 150 490 180], 'tip'
-             'LogDelta',  [1430 370 1490 400], 'delta_cmd'
-             'LogTheta',  [1180 550 1240 580], 'theta'
-             'LogUad',    [1180 660 1240 690], 'u_adaptive'
-             'LogGust',   [180 120 240 150],  'gust' };
+    % Every logged name is prefixed. An unprefixed 'moment' shadows nothing on
+    % assignment but MATLAB already has a built-in moment(), so if the block
+    % fails to log for any reason the later lookup silently resolves to that
+    % function instead of erroring cleanly. The first run of this model hit
+    % exactly that and reported "Moment requires two inputs", which says
+    % nothing useful about the real problem.
+    logs = { 'LogMoment', [430 200 490 230],   'aglas_moment'
+             'LogTip',    [430 150 490 180],   'aglas_tip'
+             'LogDelta',  [1430 370 1490 400], 'aglas_delta_cmd'
+             'LogTheta',  [1180 550 1240 580], 'aglas_theta'
+             'LogUad',    [1180 660 1240 690], 'aglas_u_ad'
+             'LogGust',   [180 120 240 150],   'aglas_gust' };
     for i = 1:size(logs,1)
         add('simulink/Sinks/To Workspace', logs{i,1}, logs{i,2});
         set_param([mdl '/' logs{i,1}], 'VariableName', logs{i,3}, ...
@@ -226,7 +232,8 @@ function mdl = build_gla_model(mdl)
                    'FixedStep', 'AGLAS.dt', ...
                    'StartTime', '0', ...
                    'StopTime', 'AGLAS.t_final', ...
-                   'SaveOutput', 'off');
+                   'SaveOutput', 'off', ...
+                   'ReturnWorkspaceOutputs', 'on');
 
     save_system(mdl);
     open_system(mdl);

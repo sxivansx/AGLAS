@@ -9,11 +9,25 @@ adaptive augmentation, in state-space form.
 cd simulink
 aglas_sim_setup          % design the controller, put matrices in the base workspace
 build_gla_model          % generate and open aglas_gla.slx
-sim('aglas_gla')
-compare_simulink         % check the model against the verified .m reference
+compare_simulink         % runs the model and checks it against the .m reference
 ```
 
-`compare_simulink` is the important step. Run it before trusting any result.
+`compare_simulink` runs the simulation itself, so there is no need to call
+`sim` separately. It is the important step: run it before trusting any result.
+
+## Logged signals
+
+All six are prefixed `aglas_`: `aglas_moment`, `aglas_tip`, `aglas_delta_cmd`,
+`aglas_theta`, `aglas_u_ad`, `aglas_gust`.
+
+The prefix is not cosmetic. An earlier version logged to a variable called
+`moment`, and because recent MATLAB returns a `Simulink.SimulationOutput`
+object rather than writing To Workspace variables into the base workspace, the
+retrieval found no variable and resolved to MATLAB's built-in `moment()`
+function instead. The error, `Moment requires two inputs`, said nothing about
+the actual problem. Retrieval now reads the `SimulationOutput` object first and
+falls back to the base workspace, and reports the missing signal by name if
+neither has it.
 
 ## What the model contains
 
